@@ -5,9 +5,12 @@ import com.fulfilment.application.monolith.warehouses.domain.ports.ArchiveWareho
 import com.fulfilment.application.monolith.warehouses.domain.ports.WarehouseStore;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
+import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class ArchiveWarehouseUseCase implements ArchiveWarehouseOperation {
+
+  private static final Logger LOG = Logger.getLogger(ArchiveWarehouseUseCase.class);
 
   private final WarehouseStore warehouseStore;
 
@@ -18,6 +21,7 @@ public class ArchiveWarehouseUseCase implements ArchiveWarehouseOperation {
   @Override
   @Transactional
   public void archive(Warehouse warehouse) {
+    LOG.infof("Archiving warehouse '%s'", warehouse.businessUnitCode);
     // Validation 1: Warehouse must exist
     Warehouse existing = warehouseStore.findByBusinessUnitCode(warehouse.businessUnitCode);
     if (existing == null) {
@@ -36,5 +40,6 @@ public class ArchiveWarehouseUseCase implements ArchiveWarehouseOperation {
 
     // Update the warehouse
     warehouseStore.update(existing);
+    LOG.infof("Warehouse '%s' archived successfully", warehouse.businessUnitCode);
   }
 }

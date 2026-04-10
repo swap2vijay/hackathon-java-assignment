@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test;
  * </ul>
  */
 @QuarkusTest
-public class WarehouseSearchIT {
+public class WarehouseSearchTest {
 
   @Inject
   EntityManager em;
