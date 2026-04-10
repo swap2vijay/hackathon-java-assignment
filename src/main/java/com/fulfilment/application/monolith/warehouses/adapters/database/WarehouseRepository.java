@@ -4,9 +4,11 @@ import com.fulfilment.application.monolith.warehouses.domain.models.Warehouse;
 import com.fulfilment.application.monolith.warehouses.domain.ports.WarehouseStore;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.transaction.Transactional;
 import java.util.List;
 
 @ApplicationScoped
+@Transactional
 public class WarehouseRepository implements WarehouseStore, PanacheRepository<DbWarehouse> {
 
   @Override
@@ -29,19 +31,19 @@ public class WarehouseRepository implements WarehouseStore, PanacheRepository<Db
 
   @Override
   public void update(Warehouse warehouse) {
-    getEntityManager().createQuery(
-      "UPDATE DbWarehouse w SET w.location = :loc, w.capacity = :cap, " +
-      "w.stock = :stock, w.archivedAt = :archived WHERE w.businessUnitCode = :code")
-      .setParameter("loc", warehouse.location)
-      .setParameter("cap", warehouse.capacity)
-      .setParameter("stock", warehouse.stock)
-      .setParameter("archived", warehouse.archivedAt)
-      .setParameter("code", warehouse.businessUnitCode)
-      .executeUpdate();
+    DbWarehouse dbWarehouse = find("businessUnitCode", warehouse.businessUnitCode).firstResult();
+    if (dbWarehouse == null) {
+      throw new IllegalArgumentException(
+          "Warehouse with business unit code '" + warehouse.businessUnitCode + "' not found");
+    }
 
-    // Clear persistence context to see updates in subsequent queries
+    dbWarehouse.location = warehouse.location;
+    dbWarehouse.capacity = warehouse.capacity;
+    dbWarehouse.stock = warehouse.stock;
+    dbWarehouse.archivedAt = warehouse.archivedAt;
+
+    getEntityManager().merge(dbWarehouse);
     getEntityManager().flush();
-    getEntityManager().clear();
   }
 
   @Override

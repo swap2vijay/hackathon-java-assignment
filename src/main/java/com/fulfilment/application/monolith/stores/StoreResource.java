@@ -22,6 +22,14 @@ import jakarta.ws.rs.ext.Provider;
 import java.util.List;
 import org.jboss.logging.Logger;
 
+/**
+ * REST resource for managing stores.
+ *
+ * <p>Provides CRUD operations for store entities. Store mutations fire CDI events
+ * that are observed by {@link StoreEventObserver} to synchronize changes with the
+ * legacy store management system. Events are processed only after successful
+ * transaction commit to ensure data consistency.</p>
+ */
 @Path("store")
 @ApplicationScoped
 @Produces("application/json")
@@ -36,11 +44,23 @@ public class StoreResource {
 
   private static final Logger LOGGER = Logger.getLogger(StoreResource.class.getName());
 
+  /**
+   * Lists all stores sorted alphabetically by name.
+   *
+   * @return list of all stores
+   */
   @GET
   public List<Store> get() {
     return Store.listAll(Sort.by("name"));
   }
 
+  /**
+   * Retrieves a single store by its ID.
+   *
+   * @param id the store ID
+   * @return the store entity
+   * @throws WebApplicationException 404 if store not found
+   */
   @GET
   @Path("{id}")
   public Store getSingle(Long id) {
@@ -51,6 +71,13 @@ public class StoreResource {
     return entity;
   }
 
+  /**
+   * Creates a new store and fires a {@link StoreCreatedEvent} for legacy system sync.
+   *
+   * @param store the store data (id must be null)
+   * @return 201 response with the created store
+   * @throws WebApplicationException 422 if id is set on request
+   */
   @POST
   @Transactional
   public Response create(Store store) {
@@ -59,11 +86,19 @@ public class StoreResource {
     }
 
     store.persist();
-    storeCreatedEvent.fireAsync(new StoreCreatedEvent(store));
+    storeCreatedEvent.fire(new StoreCreatedEvent(store));
 
     return Response.ok(store).status(201).build();
   }
 
+  /**
+   * Fully updates a store by ID and fires a {@link StoreUpdatedEvent} for legacy system sync.
+   *
+   * @param id the store ID
+   * @param updatedStore the new store data (name is required)
+   * @return the updated store entity
+   * @throws WebApplicationException 422 if name is null, 404 if store not found
+   */
   @PUT
   @Path("{id}")
   @Transactional
@@ -81,11 +116,20 @@ public class StoreResource {
     entity.name = updatedStore.name;
     entity.quantityProductsInStock = updatedStore.quantityProductsInStock;
 
-    storeUpdatedEvent.fireAsync(new StoreUpdatedEvent(entity));
+    storeUpdatedEvent.fire(new StoreUpdatedEvent(entity));
 
     return entity;
   }
 
+  /**
+   * Partially updates a store by ID. Only non-null/non-zero fields are updated.
+   * Fires a {@link StoreUpdatedEvent} for legacy system sync.
+   *
+   * @param id the store ID
+   * @param updatedStore the partial store data (name is required)
+   * @return the patched store entity
+   * @throws WebApplicationException 422 if name is null, 404 if store not found
+   */
   @PATCH
   @Path("{id}")
   @Transactional
@@ -108,11 +152,18 @@ public class StoreResource {
       entity.quantityProductsInStock = updatedStore.quantityProductsInStock;
     }
 
-    storeUpdatedEvent.fireAsync(new StoreUpdatedEvent(entity));
+    storeUpdatedEvent.fire(new StoreUpdatedEvent(entity));
 
     return entity;
   }
 
+  /**
+   * Deletes a store by ID.
+   *
+   * @param id the store ID
+   * @return 204 No Content on success
+   * @throws WebApplicationException 404 if store not found
+   */
   @DELETE
   @Path("{id}")
   @Transactional

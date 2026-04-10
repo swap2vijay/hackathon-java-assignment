@@ -1,6 +1,5 @@
 package com.fulfilment.application.monolith.warehouses.adapters;
 
-import com.fulfilment.application.monolith.location.LocationGateway;
 import com.fulfilment.application.monolith.warehouses.adapters.database.WarehouseRepository;
 import com.fulfilment.application.monolith.warehouses.domain.models.Warehouse;
 import com.fulfilment.application.monolith.warehouses.domain.usecases.CreateWarehouseUseCase;
@@ -36,14 +35,12 @@ public class WarehouseConcurrencyIT {
   WarehouseRepository warehouseRepository;
 
   @Inject
-  LocationGateway locationResolver;
-
-  private CreateWarehouseUseCase createWarehouseUseCase;
+  CreateWarehouseUseCase createWarehouseUseCase;
 
   @BeforeEach
   @Transactional
   public void setup() {
-    createWarehouseUseCase = new CreateWarehouseUseCase(warehouseRepository, locationResolver);
+    // Clean slate - remove any leftover test data
   }
 
   /**
@@ -141,9 +138,8 @@ public class WarehouseConcurrencyIT {
    * Test concurrent reads don't block each other (read scalability).
    */
   @Test
-  @Transactional
   public void testConcurrentReadsAreNonBlocking() throws InterruptedException {
-    // Create a warehouse first
+    // Create a warehouse first (committed in its own transaction via @Transactional on use case)
     Warehouse warehouse = new Warehouse();
     warehouse.businessUnitCode = "READ-TEST-001";
     warehouse.location = "AMSTERDAM-001";

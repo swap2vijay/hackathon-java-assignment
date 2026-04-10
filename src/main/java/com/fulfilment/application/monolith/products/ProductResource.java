@@ -20,6 +20,12 @@ import jakarta.ws.rs.ext.Provider;
 import java.util.List;
 import org.jboss.logging.Logger;
 
+/**
+ * REST resource for managing products.
+ *
+ * <p>Provides standard CRUD operations for product entities.
+ * Products are persisted via {@link ProductRepository} using Hibernate Panache.</p>
+ */
 @Path("product")
 @ApplicationScoped
 @Produces("application/json")
@@ -30,11 +36,23 @@ public class ProductResource {
 
   private static final Logger LOGGER = Logger.getLogger(ProductResource.class.getName());
 
+  /**
+   * Lists all products sorted alphabetically by name.
+   *
+   * @return list of all products
+   */
   @GET
   public List<Product> get() {
     return productRepository.listAll(Sort.by("name"));
   }
 
+  /**
+   * Retrieves a single product by its ID.
+   *
+   * @param id the product ID
+   * @return the product entity
+   * @throws WebApplicationException 404 if product not found
+   */
   @GET
   @Path("{id}")
   public Product getSingle(Long id) {
@@ -45,6 +63,13 @@ public class ProductResource {
     return entity;
   }
 
+  /**
+   * Creates a new product.
+   *
+   * @param product the product data (id must be null)
+   * @return 201 response with the created product
+   * @throws WebApplicationException 422 if id is set on request
+   */
   @POST
   @Transactional
   public Response create(Product product) {
@@ -56,6 +81,14 @@ public class ProductResource {
     return Response.ok(product).status(201).build();
   }
 
+  /**
+   * Updates an existing product by ID.
+   *
+   * @param id the product ID
+   * @param product the new product data (name is required)
+   * @return the updated product entity
+   * @throws WebApplicationException 422 if name is null, 404 if product not found
+   */
   @PUT
   @Path("{id}")
   @Transactional
@@ -80,6 +113,13 @@ public class ProductResource {
     return entity;
   }
 
+  /**
+   * Deletes a product by ID.
+   *
+   * @param id the product ID
+   * @return 204 No Content on success
+   * @throws WebApplicationException 404 if product not found
+   */
   @DELETE
   @Path("{id}")
   @Transactional

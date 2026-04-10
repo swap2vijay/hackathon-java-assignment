@@ -1,0 +1,12 @@
+target/
+.m2/
+*.class
+*.jar
+*.log
+.idea/
+*.iml
+.vscode/
+.kiro/
+.claude/
+test-data/
+API_Test_Results.csv

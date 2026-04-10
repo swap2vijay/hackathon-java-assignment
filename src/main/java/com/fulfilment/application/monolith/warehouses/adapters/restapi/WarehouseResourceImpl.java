@@ -13,6 +13,15 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.WebApplicationException;
 import java.util.List;
 
+/**
+ * REST resource for managing warehouse units.
+ *
+ * <p>This controller implements the OpenAPI-generated {@link WarehouseResource} interface.
+ * All endpoints delegate business logic to domain use cases following hexagonal architecture.
+ * Validation errors from use cases are translated to appropriate HTTP status codes.</p>
+ *
+ * @see WarehouseResource
+ */
 @RequestScoped
 public class WarehouseResourceImpl implements WarehouseResource {
 
@@ -21,11 +30,31 @@ public class WarehouseResourceImpl implements WarehouseResource {
   @Inject private ArchiveWarehouseOperation archiveWarehouseOperation;
   @Inject private ReplaceWarehouseOperation replaceWarehouseOperation;
 
+  /**
+   * Lists all warehouse units in the system, including archived ones.
+   *
+   * @return list of all warehouses
+   */
   @Override
   public List<Warehouse> listAllWarehousesUnits() {
     return warehouseRepository.getAll().stream().map(this::toWarehouseResponse).toList();
   }
 
+  /**
+   * Creates a new warehouse unit after validating business rules.
+   *
+   * <p>Validations performed:
+   * <ul>
+   *   <li>Business unit code must be unique</li>
+   *   <li>Location must exist in the system</li>
+   *   <li>Capacity must not exceed the location's max capacity</li>
+   *   <li>Stock must not exceed the warehouse capacity</li>
+   * </ul>
+   *
+   * @param data the warehouse data to create
+   * @return the created warehouse
+   * @throws WebApplicationException 400 if validation fails
+   */
   @Override
   @Transactional
   public Warehouse createANewWarehouseUnit(@NotNull Warehouse data) {
@@ -47,6 +76,13 @@ public class WarehouseResourceImpl implements WarehouseResource {
     }
   }
 
+  /**
+   * Retrieves a single warehouse unit by its business unit code.
+   *
+   * @param id the business unit code of the warehouse
+   * @return the warehouse matching the given code
+   * @throws WebApplicationException 404 if no warehouse is found
+   */
   @Override
   public Warehouse getAWarehouseUnitByID(String id) {
     // Find warehouse by business unit code
@@ -59,6 +95,15 @@ public class WarehouseResourceImpl implements WarehouseResource {
     return toWarehouseResponse(domainWarehouse);
   }
 
+  /**
+   * Archives a warehouse unit by setting its archivedAt timestamp.
+   *
+   * <p>An archived warehouse cannot be modified or archived again.
+   * Only active (non-archived) warehouses can be archived.</p>
+   *
+   * @param id the business unit code of the warehouse to archive
+   * @throws WebApplicationException 404 if warehouse not found, 400 if already archived
+   */
   @Override
   @Transactional
   public void archiveAWarehouseUnitByID(String id) {
@@ -77,6 +122,18 @@ public class WarehouseResourceImpl implements WarehouseResource {
     }
   }
 
+  /**
+   * Replaces an active warehouse with new data while preserving its business unit code.
+   *
+   * <p>The existing warehouse's location, capacity, and stock are updated.
+   * Archived warehouses cannot be replaced. The new values must pass the same
+   * validations as warehouse creation (valid location, capacity within limits, etc.).</p>
+   *
+   * @param businessUnitCode the business unit code of the warehouse to replace
+   * @param data the new warehouse data
+   * @return the updated warehouse
+   * @throws WebApplicationException 404 if not found, 400 if archived or validation fails
+   */
   @Override
   @Transactional
   public Warehouse replaceTheCurrentActiveWarehouse(
