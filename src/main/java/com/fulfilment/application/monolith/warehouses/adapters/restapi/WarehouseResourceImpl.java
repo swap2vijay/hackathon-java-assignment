@@ -12,6 +12,7 @@ import jakarta.transaction.Transactional;
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.WebApplicationException;
 import java.util.List;
+import org.jboss.logging.Logger;
 
 /**
  * REST resource for managing warehouse units.
@@ -25,6 +26,8 @@ import java.util.List;
 @RequestScoped
 public class WarehouseResourceImpl implements WarehouseResource {
 
+  private static final Logger LOG = Logger.getLogger(WarehouseResourceImpl.class);
+
   @Inject private WarehouseRepository warehouseRepository;
   @Inject private CreateWarehouseOperation createWarehouseOperation;
   @Inject private ArchiveWarehouseOperation archiveWarehouseOperation;
@@ -37,6 +40,7 @@ public class WarehouseResourceImpl implements WarehouseResource {
    */
   @Override
   public List<Warehouse> listAllWarehousesUnits() {
+    LOG.info("Listing all warehouse units");
     return warehouseRepository.getAll().stream().map(this::toWarehouseResponse).toList();
   }
 
@@ -68,10 +72,12 @@ public class WarehouseResourceImpl implements WarehouseResource {
     try {
       // Create warehouse through use case (includes validations)
       createWarehouseOperation.create(domainWarehouse);
+      LOG.infof("Warehouse '%s' created via REST", data.getBusinessUnitCode());
       
       // Return the created warehouse
       return toWarehouseResponse(domainWarehouse);
     } catch (IllegalArgumentException e) {
+      LOG.warnf("Failed to create warehouse '%s': %s", data.getBusinessUnitCode(), e.getMessage());
       throw new WebApplicationException(e.getMessage(), 400);
     }
   }
@@ -117,7 +123,9 @@ public class WarehouseResourceImpl implements WarehouseResource {
     try {
       // Archive warehouse through use case (includes validations)
       archiveWarehouseOperation.archive(domainWarehouse);
+      LOG.infof("Warehouse '%s' archived via REST", id);
     } catch (IllegalArgumentException e) {
+      LOG.warnf("Failed to archive warehouse '%s': %s", id, e.getMessage());
       throw new WebApplicationException(e.getMessage(), 400);
     }
   }
@@ -148,11 +156,13 @@ public class WarehouseResourceImpl implements WarehouseResource {
     try {
       // Replace warehouse through use case (includes validations)
       replaceWarehouseOperation.replace(domainWarehouse);
+      LOG.infof("Warehouse '%s' replaced via REST", businessUnitCode);
 
       // Return the updated warehouse
       var updated = warehouseRepository.findByBusinessUnitCode(businessUnitCode);
       return toWarehouseResponse(updated);
     } catch (IllegalArgumentException e) {
+      LOG.warnf("Failed to replace warehouse '%s': %s", businessUnitCode, e.getMessage());
       throw new WebApplicationException(e.getMessage(), 400);
     }
   }

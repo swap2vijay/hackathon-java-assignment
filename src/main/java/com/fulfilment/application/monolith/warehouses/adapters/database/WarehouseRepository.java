@@ -6,18 +6,23 @@ import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import java.util.List;
+import org.jboss.logging.Logger;
 
 @ApplicationScoped
 @Transactional
 public class WarehouseRepository implements WarehouseStore, PanacheRepository<DbWarehouse> {
 
+  private static final Logger LOG = Logger.getLogger(WarehouseRepository.class);
+
   @Override
   public List<Warehouse> getAll() {
+    LOG.debug("Fetching all warehouses");
     return this.listAll().stream().map(DbWarehouse::toWarehouse).toList();
   }
 
   @Override
   public void create(Warehouse warehouse) {
+    LOG.infof("Persisting new warehouse '%s'", warehouse.businessUnitCode);
     DbWarehouse dbWarehouse = new DbWarehouse();
     dbWarehouse.businessUnitCode = warehouse.businessUnitCode;
     dbWarehouse.location = warehouse.location;
@@ -31,6 +36,7 @@ public class WarehouseRepository implements WarehouseStore, PanacheRepository<Db
 
   @Override
   public void update(Warehouse warehouse) {
+    LOG.infof("Updating warehouse '%s'", warehouse.businessUnitCode);
     DbWarehouse dbWarehouse = find("businessUnitCode", warehouse.businessUnitCode).firstResult();
     if (dbWarehouse == null) {
       throw new IllegalArgumentException(
@@ -48,12 +54,18 @@ public class WarehouseRepository implements WarehouseStore, PanacheRepository<Db
 
   @Override
   public void remove(Warehouse warehouse) {
-    // TODO Auto-generated method stub
-    throw new UnsupportedOperationException("Unimplemented method 'remove'");
+    LOG.infof("Removing warehouse '%s'", warehouse.businessUnitCode);
+    DbWarehouse dbWarehouse = find("businessUnitCode", warehouse.businessUnitCode).firstResult();
+    if (dbWarehouse == null) {
+      throw new IllegalArgumentException(
+          "Warehouse with business unit code '" + warehouse.businessUnitCode + "' not found");
+    }
+    delete(dbWarehouse);
   }
 
   @Override
   public Warehouse findByBusinessUnitCode(String buCode) {
+    LOG.debugf("Looking up warehouse by code '%s'", buCode);
     DbWarehouse dbWarehouse = find("businessUnitCode", buCode).firstResult();
     return dbWarehouse != null ? dbWarehouse.toWarehouse() : null;
   }

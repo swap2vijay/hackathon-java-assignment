@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.jboss.logging.Logger;
 
 /**
  * REST resource for searching and filtering warehouse units.
@@ -28,6 +29,8 @@ import java.util.Map;
 @ApplicationScoped
 @Produces(MediaType.APPLICATION_JSON)
 public class WarehouseSearchResource {
+
+  private static final Logger LOG = Logger.getLogger(WarehouseSearchResource.class);
 
   @Inject
   EntityManager em;
@@ -62,6 +65,9 @@ public class WarehouseSearchResource {
     if (pageSize < 1) pageSize = 10;
     if (pageSize > 100) pageSize = 100;
     if (page < 0) page = 0;
+
+    LOG.infof("Warehouse search: location=%s, minCapacity=%s, maxCapacity=%s, sortBy=%s, sortOrder=%s, page=%d, pageSize=%d",
+        location, minCapacity, maxCapacity, sortBy, sortOrder, page, pageSize);
 
     // Validate sortBy
     if (!"createdAt".equals(sortBy) && !"capacity".equals(sortBy)) {
@@ -131,6 +137,7 @@ public class WarehouseSearchResource {
     response.put("totalElements", totalElements);
     response.put("totalPages", (int) Math.ceil((double) totalElements / pageSize));
 
+    LOG.infof("Warehouse search returned %d results (total: %d)", results.size(), totalElements);
     return Response.ok(response).build();
   }
 }
